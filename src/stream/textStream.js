@@ -1,11 +1,12 @@
 const fs = require('fs');
+const util = require('util');
 
 /**
  * Stream text data to a WebSocket connection.
  * @param {string} filePath - The path of the text file to stream.
  * @param {WebSocket} ws - The WebSocket connection to stream the data to.
  */
-function streamText(filePath, ws) {
+async function streamText(filePath, ws) {
   // Create a readable stream from the text file.
   const stream = fs.createReadStream(filePath, { encoding: 'utf8' });
 
@@ -24,6 +25,8 @@ function streamText(filePath, ws) {
   stream.on('end', () => {
     ws.close();
   });
-}
 
-module.exports = streamText;
+  // Wrap the stream's `close` event in a promise.
+  const streamClosed = util.promisify(stream.on).bind(stream)('close');
+
+  // Wait for the stream to close or for the WebSocket connection to close
